@@ -14,7 +14,35 @@
 | path to your installation.
 |
 */
+
+$config['app_name'] = 'CZLT.cz | Kurzy';
+
 $config['base_url']	= '';
+
+$config['predefined_paths'] = array('js' => 'assets/js/', 'css' => 'assets/css/', 'img' => 'assets/img/');
+
+
+$config['show_model_links'] = True;
+
+$config['attend_statuses'] = array('interested' => 'Is interested', 'waiting_confirm' => 'Waiting for confirmation', 'ordered' => 'Ordered', 'paid' => 'Paid', 'ending' => 'Ending');
+
+$config['statuse_colors'] = array('interested' => '#FACC2E', 'waiting_confirm' => '#FE9A2E', 'ordered' => '#FE2E2E', 'paid' => '#3ADF00', 'ending' => '#2E64FE');
+
+$config['course_statuses'] = array('copied' => 'Copied', 'edited' => 'Edited', 'filled' => 'Filled');
+
+$config['student_course_tags'] = array(
+									 	'application_sent' => 'P', 
+									    'cash' => 'C', 
+									    'credit_card' => 'CC', 
+									    'card_online' => 'CCO', 
+									    'bank' => 'B', 
+									    'bank_invoice' => 'BF',
+									    'benefity' => 'Benefity',
+									    'integraion_of_foreignres' => 'Cic',
+									   );
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -26,7 +54,7 @@ $config['base_url']	= '';
 | variable so that it is blank.
 |
 */
-$config['index_page'] = 'index.php';
+$config['index_page'] = '';
 
 /*
 |--------------------------------------------------------------------------
@@ -224,7 +252,7 @@ $config['cache_path'] = '';
 | MUST set an encryption key.  See the user guide for info.
 |
 */
-$config['encryption_key'] = '';
+$config['encryption_key'] = 'ENTERYOUROWNKEYHERE';
 
 /*
 |--------------------------------------------------------------------------
@@ -279,7 +307,7 @@ $config['cookie_secure']	= FALSE;
 | COOKIE data is encountered
 |
 */
-$config['global_xss_filtering'] = FALSE;
+$config['global_xss_filtering'] = TRUE;
 
 /*
 |--------------------------------------------------------------------------
