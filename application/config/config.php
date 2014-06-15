@@ -21,7 +21,11 @@ $config['base_url']	= '';
 
 $config['predefined_paths'] = array('js' => 'assets/js/', 'css' => 'assets/css/', 'img' => 'assets/img/');
 
+$config['static_lang'] = 'cs';
 
+$config['supported_langs'] = array('cs');
+
+$config['default_lang_file'] = 'czlt';
 $config['show_model_links'] = True;
 
 $config['attend_statuses'] = array('interested' => 'Is interested', 'waiting_confirm' => 'Waiting for confirmation', 'ordered' => 'Ordered', 'paid' => 'Paid', 'ending' => 'Ending');
