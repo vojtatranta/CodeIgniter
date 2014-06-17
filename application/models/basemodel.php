@@ -3,7 +3,6 @@
 class Basemodel extends CI_Model {
 
 	protected $db_query;
-	private static $was_related_with;
 
 	public function __construct()
 	{
@@ -19,10 +18,24 @@ class Basemodel extends CI_Model {
 	{
 		$inst_class = self::model_to_table_name($this);
 
-		foreach($this->$inst_class as $prop => $val) //we do not want get properties in private context		
+		foreach($this->ci_get($inst_class) as $prop => $val) //we do not want get properties in private context		
 		{
 			return $prop;
 		}
+	}
+
+	public function is_loaded($class_name)
+	{
+		$ci =& get_instance();
+
+		return isset($ci->$class_name);
+	}
+
+	public function ci_get($class_name)
+	{
+		$ci =& get_instance();
+		
+		return $ci->$class_name;
 	}
 
 	/**
@@ -58,6 +71,145 @@ class Basemodel extends CI_Model {
 		$this->alter_table( $to_create );
 	}	
 
+	public static function syncdb($class_name)
+	{
+		$ci =& get_instance();
+
+		$class_reflection = new ReflectionClass($class_name);
+
+
+		if (!class_exists($class_name) OR !$class_reflection->isSublcassOf(__CLASS__))
+		{
+			throw new Exception("Given class does not exists or is not a model class", 1);	
+		}
+
+		$fields_settings = $class_name::$fields_settings;
+
+		if (!$ci->db->table_exists($class_name))
+		{
+			self::_static_create_model_table($class_name);
+		}
+
+		$existing_columns = array_flip($ci->db->list_fields($class_name));
+
+		$models = array_flip(self::static_get_models());
+
+
+
+		$new_columns = array();
+
+		foreach($fields_settings as $prop => $settings)
+		{	
+			$reflection_property = new ReflectionProperty($class_name, $prop);
+
+			if (!$class_reflection->hasProperty($prop) OR isset($existing_columns[$prop]) OR !$reflection_property->isPublic())
+			{
+				continue;
+			} 
+
+			$rules = isset($settings['rules']) ? array_flip($settings['rules']) : array();
+
+			$type = isset($settings['type']) ? strtoupper($settings['type']) : 'VARCHAR';
+
+			if (isset($models[$type]))
+			{
+				$new_column = array('type' => 'INT');
+			}
+			else
+			{
+				$new_column = array('type' => $type);
+			}
+
+			if (!isset($rules['required'])) 
+			{
+				$new_column['null'] = True;
+			}
+
+			if (isset($rules['unique']))
+			{
+				$new_column['index'] = 'UNIQUE';
+			}
+
+			$new_column['multiple'] = isset($settings['multiple']);
+
+			$new_columns[$prop] = $new_column;
+  
+		}
+
+		if (empty($new_columns)) return true;
+
+		$ci->load->dbforge();
+
+		foreach ($new_columns as $name => $settings) 
+		{
+			if ($settings['multiple'])
+			{
+				self::_add_multiple_field($class_name, $name, $settings);
+				continue;
+			}
+
+			$new_fields[$name] = array('type' => $settings['type'], 'null' => isset($settings['null']));	
+
+			if ($settings['type'] == 'VARCHAR')
+			{
+				$new_fields['name']['constraint'] = 255; 
+			}
+
+		}
+
+		$ci->dbforge->add_column( $class_name, $new_fields );	
+	}
+
+	private static function _add_multiple_field($class_name, $field_name, $settings)
+	{
+		$ci =& get_instance();
+
+		$conn_table_name = $class_name.'_'.$settings['type'];
+
+		$tables = array_flip($ci->db->list_tables());
+
+		if ( !isset($tables[$conn_table_name]) )	
+		{	
+			$conn_fields[] = array( $conn_table_name => array('TYPE' => 'int') );
+			$conn_fields[] = array( $settings['type'] => array('TYPE' => 'int', 'NULL' => true) );
+
+				$this->dbforge->add_field('id');
+				$this->dbforge->add_field($conn_fields);
+
+			$this->dbforge->create_table( $conn_table_name );
+		}	
+	}
+
+	protected function _sync_db()
+	{
+		$class_name = self::model_to_table_name($this);
+
+		if ($this->is_loaded($class_name)) return true; //this is not first instance of $this class
+
+		return self::syncdb($class_name);
+
+		$table_name = self::model_to_table_name( $this );
+
+
+		if ( !$this->db->table_exists( $table_name ) )
+		{
+			$this->_create_model_table( $this );
+		}
+
+		$db_columns = $this->db->list_fields( $table_name );
+
+		$model_props = $this->get_fields_to_create( $this );
+
+		$flipped = array_flip($db_columns);
+		$to_create = array();
+		foreach ($model_props as $prop) 
+		{
+			if (!isset($flipped[$prop])) $to_create[] = $prop;
+		}
+
+		
+		$this->alter_table( $to_create );
+	}	
 
 	/**
 	 * Gets class of instance given in parameter and returns it in lowercase
@@ -133,15 +285,22 @@ class Basemodel extends CI_Model {
 		}
 	}
 
-	private function create_model_table( $model )
+	private function _create_model_table( $model )
 	{
 		$this->load->dbforge();
 
 		$table_name = self::model_to_table_name( $model );
-		$id = array( 'id' => array('TYPE' => 'int', 'AUTO_INCREMENT' => true) );
-		$this->dbforge->add_field($id);
-		$this->dbforge->add_key('id', true);
+		$this->dbforge->add_field('id');
 		$this->dbforge->create_table( $table_name );
+	}
+
+	private static function _static_create_model_table( $class_name )
+	{
+		$ci =& get_instance();
+		$ci->load->dbforge();
+
+		$ci->dbforge->add_field('id');
+		$ci->dbforge->create_table( $class_name );
 	}
 
 
@@ -218,7 +377,25 @@ class Basemodel extends CI_Model {
 		return $fin;
 	}
 
-	public function get_models()
+	public static function static_get_models()
+	{
+		$models = array();
+		$ci =& get_instance();
+		$tables = $ci->db->list_tables();
+
+		foreach( $tables as $table_name )
+		{
+			$entries = array_flip(scandir(APPPATH.DIRECTORY_SEPARATOR.'models'));
+
+			if ( isset($entries[$table_name.'.php']) ) $models[] = $table_name;
+		
+		}
+
+		return $models;
+	
+	}
+
+	public static function get_models()
 	{
 		$models = array();
 		$tables = $this->db->list_tables();

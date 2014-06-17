@@ -7,7 +7,7 @@ class Student extends Basemodel {
 	public $email = '';
 	public $created = '';
 
-	protected $field_settings = array(
+	protected static $field_settings = array(
 		'firstname'  => array('rules'  => array('required')),
 		'familyname' => array('rules'  => array('required')),
 		'email' 	 => array('rules'  => array('required')),

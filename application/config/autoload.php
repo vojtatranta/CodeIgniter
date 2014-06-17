@@ -109,7 +109,7 @@ $autoload['language'] = array();
 |
 */
 
-$autoload['model'] = array('basemodel', 'mailer', 'user', 'course_type', 'course', 'textbook', 'student', 'student_course', 'lector', 'course_time', 'classroom', 'course_month');
+$autoload['model'] = array('basemodel', 'newmodel', 'mailer', 'user', 'course_type', 'course', 'textbook', 'student', 'student_course', 'lector', 'course_time', 'classroom', 'course_month');
 
 
 /* End of file autoload.php */

@@ -37,6 +37,13 @@ class CI_Collection implements ArrayAccess, Iterator
 		
 	}	
 
+	public function __toString()
+	{
+		if (!isset($this->row_result)) $this->row_result = $this->row();
+
+		return (string) $this->row_result;
+	}
+
 	public function row()
 	{
 		$class_name = $this->lower_class_name($this->instance);
